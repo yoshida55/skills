@@ -1,0 +1,8 @@
+{
+  "name": "auto-class",
+  "description": "HTMLタグにクラス名を自動付与",
+  "version": "1.0.0",
+  "author": "User",
+  "tags": ["html", "css", "class", "naming"],
+  "invocable": true
+}

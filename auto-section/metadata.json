@@ -1,0 +1,8 @@
+{
+  "name": "auto-section",
+  "description": "スクショからセクション名を自動提案",
+  "version": "1.0.0",
+  "author": "User",
+  "tags": ["html", "css", "section", "naming"],
+  "invocable": true
+}
