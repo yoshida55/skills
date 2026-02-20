@@ -1,0 +1,8 @@
+{
+  "name": "auto-clean",
+  "description": "提出前のHTML/CSSクリーンアップ（デバッグ痕跡・コメント整理）",
+  "version": "1.0.0",
+  "author": "User",
+  "tags": ["html", "css", "clean", "review"],
+  "invocable": true
+}

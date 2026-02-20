@@ -1,0 +1,8 @@
+{
+  "name": "auto-skeleton",
+  "description": "HTMLからCSSスケルトン（空ルールセット+コメント）を自動生成",
+  "version": "1.0.0",
+  "author": "User",
+  "tags": ["html", "css", "skeleton", "comment"],
+  "invocable": true
+}
