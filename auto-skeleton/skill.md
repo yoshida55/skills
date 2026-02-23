@@ -76,6 +76,18 @@ HTMLの構造を読み取り、CSSスケルトン（空ルールセット+コメ
 
 ## 🎯 実行フロー
 
+### 0. TodoWriteでチェックリスト表示（絶対厳守）
+スキル開始時に**必ず**以下のTodoWriteを実行し、チャット画面にチェックリストを表示する。
+各ステップ完了ごとにstatusを `completed` に更新すること。
+
+```
+TodoWrite([
+  { content: "HTMLからクラス名・構造を読み取る",       status: "in_progress", activeForm: "HTMLからクラス名・構造を読み取り中" },
+  { content: "CSSスケルトン生成 → ファイルに追記",     status: "pending",     activeForm: "CSSスケルトン生成・追記中" },
+  { content: "HTMLコメントをCSS基準で更新",            status: "pending",     activeForm: "HTMLコメントをCSS基準で更新中" }
+])
+```
+
 ### 1. ユーザーがHTMLを提示（クラス名付き）
 ```html
 <article class="news_item">
