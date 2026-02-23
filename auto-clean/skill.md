@@ -1,5 +1,10 @@
 # auto-clean スキル
 
+> ## ⚡ 絶対最初にやること（これを忘れたら全部やり直し）
+> **スキル読み込み直後、作業の1行目は必ず `TodoWrite` でStep 0のチェックリストを出す**
+> ❌ TodoWrite なしで Grep や Read を始める → 禁止
+> ✅ TodoWrite → その後に検索・作業 → 正しい順序
+
 提出前のHTML/CSSクリーンアップを実行するスキル
 
 ## 使い方
@@ -13,6 +18,28 @@
 
 提出前にコードを検査し、開発用の痕跡やミスを検出・修正する。
 **修正は実行せず、検出結果を一覧で報告する。ユーザーが確認後に修正を指示する。**
+
+---
+
+## 🚀 Step 0. TodoWriteでチェックリスト表示（絶対厳守・スキル開始直後に必ず実行）
+
+```
+TodoWrite([
+  { content: "└コメント検出（CSS・HTML）",                       status: "in_progress", activeForm: "└コメント検出中" },
+  { content: "デバッグ用コード検出",                              status: "pending",     activeForm: "デバッグコード検出中" },
+  { content: "AI生成文の検出",                                    status: "pending",     activeForm: "AI生成文検出中" },
+  { content: "共通化候補の検出",                                  status: "pending",     activeForm: "共通化候補検出中" },
+  { content: "命名ミスの検出",                                    status: "pending",     activeForm: "命名ミス検出中" },
+  { content: "参考フォルダの検出",                                status: "pending",     activeForm: "参考フォルダ検出中" },
+  { content: "CSS↔HTMLコメント整合性チェック",                   status: "pending",     activeForm: "コメント整合性チェック中" },
+  { content: "その他（TODO/空ルール/!important等）検出",          status: "pending",     activeForm: "その他検出中" },
+  { content: "不必要なCSSプロパティの検出",                       status: "pending",     activeForm: "不必要なCSSプロパティ検出中" },
+  { content: "CSSプロパティ並び順チェック",                        status: "pending",     activeForm: "プロパティ並び順チェック中" },
+  { content: "結果一覧をユーザーに報告",                          status: "pending",     activeForm: "結果報告中" }
+])
+```
+
+各ステップ完了ごとに `completed` に更新すること。
 
 ---
 
@@ -126,6 +153,73 @@ CSS↔HTMLのコメントが一致しているか確認する。
 
 ---
 
+### 9. 不必要なCSSプロパティの検出
+効果がない・重複している・上書きされているプロパティを検出し報告する。
+
+**検出対象**:
+- **同一ルールセット内の重複プロパティ**: 同じプロパティが2回書かれている
+- **上書きされて無効なプロパティ**: 後のルールで完全に上書きされている
+- **効果のないプロパティ**: 例）`display: block` な要素に `vertical-align`、`inline` 要素に `width/height`
+- **flexbox不要プロパティ**: `float` が `display: flex` と共存している等
+- **0値の単位**: `0px` `0rem` → `0` で十分
+
+**報告形式**:
+```
+⚠ 不必要なCSSプロパティ:
+- work.css:123 → .news_item に float: left（display:flexと併用で無効）
+- work.css:456 → .case_img に vertical-align: middle（block要素に無効）
+- work.css:789 → margin: 0px → margin: 0 で十分
+```
+
+**報告のみ**。削除はユーザーが確認後に指示する。
+
+---
+
+### 10. CSSプロパティ並び順チェック
+各ルールセット内のプロパティが以下の順番になっているか確認する。
+
+**正しい並び順**:
+```
+① サイズ・位置     width / height / position / top / left / right / bottom / z-index
+② 余白             padding / margin
+③ 見た目           background / color / border / border-radius / opacity / box-shadow
+④ 文字             font-size / font-weight / line-height / text-align / text-decoration
+⑤ レイアウト       display / flex-direction / justify-content / align-items / gap / grid-template-columns
+```
+
+**検出対象**: 上の順番に対して明らかに逆転しているもの
+
+**例（NG）**:
+```css
+.news_item {
+  display: flex;        ← ⑤ レイアウト（先に書かれている）
+  width: 100%;          ← ① サイズ（後に書かれている → 逆転）
+  gap: 1rem;
+}
+```
+
+**例（OK）**:
+```css
+.news_item {
+  width: 100%;          ← ① サイズ
+  padding: 2rem;        ← ② 余白
+  background: white;    ← ③ 見た目
+  font-size: 1.4rem;    ← ④ 文字
+  display: flex;        ← ⑤ レイアウト
+  gap: 1rem;
+}
+```
+
+**報告形式**:
+```
+⚠ プロパティ並び順:
+- work.css:965 → .footer_sns_link: display:flex（⑤）が width（①）より上に記述
+```
+
+**報告のみ**。並び替えはユーザーが確認後に指示する。
+
+---
+
 ## 🎯 出力フォーマット
 
 全項目をチェックリストで表示し、漏れなく網羅すること。
@@ -164,6 +258,15 @@ CSS↔HTMLのコメントが一致しているか確認する。
 - [ ] 空ルールセット: ○件
 - [ ] コメントアウトされたコード: ○件
 - [ ] !important: ○件
+
+### 9. 不必要なCSSプロパティ
+- [ ] 重複プロパティ: ○件
+- [ ] 上書きされて無効なプロパティ: ○件
+- [ ] 効果のないプロパティ（inline要素のwidth等）: ○件
+- [ ] 0値の単位（0px→0）: ○件
+
+### 10. CSSプロパティ並び順
+- [ ] 順番が逆転しているルールセット: ○件
 ```
 
 ---
@@ -174,3 +277,8 @@ CSS↔HTMLのコメントが一致しているか確認する。
 2. **ユーザー確認後に修正**: 「修正して」と言われたら実行
 3. **判断が必要なものは提案のみ**: 共通化・AI文など
 4. **`└` 削除時は空行も整理**: コメント削除後に空行が連続しないようにする
+5. **Grepファースト（トークン節約）**: ファイルを丸ごと `Read` する前に、必ず `Grep` でパターン検索してから該当箇所のみ読む
+   - ✅ `└` → Grep で `└` を検索
+   - ✅ デバッグ → Grep で `border.*red` `console.log` を検索
+   - ✅ `!important` → Grep で `!important` を検索
+   - ❌ 全文 Read してから目視で探す → 禁止
