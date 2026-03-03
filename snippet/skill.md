@@ -157,6 +157,12 @@ if (scroll > target - windowHeight + 200) {
 - 重要な気づき
 - Before/After の比較
 
+## タイトルルール（絶対厳守）
+- 長くなってもOK。短くしようとしない
+- テンプレート：`[何をしたとき] → [何が起きる]（[解決策]）`
+- ✅ 良い例：`position: absolute + 親が100vh → bottom: remで指定するとずれる（topか%を使う）`
+- ❌ 悪い例：`bottomのずれ`（条件も解決策も不明）
+
 ## memo.md 追記フォーマット
 ```markdown
 ▢
