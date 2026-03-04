@@ -36,9 +36,19 @@ triggers:
 3. タイトルに「解決策」が入っているか？
 4. 結論がタイトルの繰り返しになっていないか？（→ 結論にはタイトルと違う実用情報を書く）
 
-## 📍 追記後の報告ルール（必須）
+## 📍 追記後の報告 + VS Codeジャンプ（必須）
 - メモ追記・更新後は **追加/変更した行番号** をユーザーに報告する
 - 例: 「📍 行7568〜7571 に追記しました」
+- 追記後に必ず以下のcurlを実行してVS Codeの該当行を黄色ハイライトする:
+  - 自宅PC（D:\50_knowledge\01_memo.md が存在する場合）:
+    ```bash
+    curl -s -X POST http://127.0.0.1:3848/highlight-line -H "Content-Type: application/json" --data-binary "{\"filePath\": \"D:/50_knowledge/01_memo.md\", \"lineNumber\": 追記開始行番号}"
+    ```
+  - 会社PC（C:\Users\guest04\Desktop\高橋研三\03_knowledge\01_memo.md が存在する場合）:
+    ```bash
+    curl -s -X POST http://127.0.0.1:3848/highlight-line -H "Content-Type: application/json" --data-binary "{\"filePath\": \"C:/Users/guest04/Desktop/高橋研三/03_knowledge/01_memo.md\", \"lineNumber\": 追記開始行番号}"
+    ```
+  - curlが失敗してもエラーは無視してよい（VS Codeが起動していない場合など）
 
 ## 🔗 関連メモリンクルール
 - 関連する別メモがある場合、補足の末尾に `【関連】` を追記する
