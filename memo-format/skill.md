@@ -100,6 +100,26 @@ single.php（詳細）
 - 既存メモへの補足追加 → `###`（見出し3）
 - ユーザーが「大切」「重要」と言ったとき → `##` に格上げ
 
+## 🏷 カテゴリタグルール（絶対厳守）
+
+`##` または `###` の見出しを書くとき、**必ずタイトルの末尾にカテゴリタグを付ける**。
+
+| 内容 | タグ | 判定キーワード例 |
+|---|---|---|
+| WordPress・PHP関連 | `WordPress` | WordPress, PHP, wp_, the_, get_the_, functions.php, archive.php, single.php, esc_url, wp_enqueue, カスタムフィールド, テーマ, パーマリンク, アイキャッチ |
+| HTML・CSS・JavaScript・jQuery・その他 | `HTML` | CSS, Flexbox, JavaScript, jQuery, animation, transition, position, display, その他すべて |
+
+**書き方**:
+```
+## 📌 wp_query()で最新5件取得する方法 WordPress
+## 📌 flexboxで子要素を中央揃えする方法 HTML
+### the_permalink()とは WordPress
+```
+
+- タグは **半角スペース1つ** を挟んでタイトル末尾に付ける
+- `###` にも必ず付ける
+- 既存メモの `###` を追加するときも忘れずに付ける
+
 ## ✅ ファクトチェックルール（必須）
 - メモ追記前に、内容が正しいか確認する
 - 確認できた場合 → 「✅ ファクトチェック済」と一言添える
