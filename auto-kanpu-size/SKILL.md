@@ -66,9 +66,75 @@ JSONが届いたら Step 2 へ進む。
 
 ---
 
-### Step 3. CSS読み込み
+### Step 3. CSS読み込み + rem ベース確認（絶対厳守）
 
 Grep でクラスごとの `font-size` / `font-weight` を抽出する。
+
+#### 🚨 rem の基準を必ず先に確認する（デフォルトと思わない）
+
+CSS を読む前に、**`html` の `font-size` 設定を必ず確認する**。
+
+```
+確認方法: Grep で html { font-size を検索する
+```
+
+| htmlのfont-size | 1rem = ? | px → rem 変換 |
+|---|---|---|
+| `62.5%` | 10px | px ÷ 10（例: 16px → 1.6rem） |
+| `calc(10 / 1400 * 100vw)` | 1400px幅で10px | px ÷ 10（例: 16px → 1.6rem） |
+| `100%`（未指定） | 16px | px ÷ 16（例: 16px → 1rem） |
+
+> ⚠ `1.6rem` を見ても「16pxだ」と決めつけない。
+> html の font-size を確認してから計算すること。
+
+---
+
+#### 🚨 font-family の指定場所ルール（絶対厳守）
+
+JSON の全エントリの `fontFamily` を確認して、以下のルールで指定場所を決める。
+
+| 状況 | 指定場所 |
+|---|---|
+| サイト全体で同じ fontFamily | `body` に1箇所だけ書く |
+| セクション内は同じだがサイト全体では異なる | そのセクションの親クラスに書く（例: `.news_area`） |
+| 要素ごとにバラバラ | 該当クラスに個別に書く |
+
+```css
+/* ✅ 全部同じなら body に1箇所 */
+body { font-family: "Yu Mincho", "游明朝", serif; }
+
+/* ✅ セクション内だけ同じなら親クラスに1箇所 */
+.news_area { font-family: "Yu Mincho", "游明朝", serif; }
+.products_area { font-family: "Noto Sans JP", sans-serif; }
+
+/* ❌ セクション内の各クラスに重複して書かない */
+.news_title { font-family: "Yu Mincho", ... }
+.news_text  { font-family: "Yu Mincho", ... }  ← 重複NG
+```
+
+> ⚠ なるべく上位のクラスに1箇所まとめて書く。下位クラスに重複して書かない。
+
+#### 🚨 color の指定場所ルール（font-family と同じ方針）
+
+JSON の全エントリの `color` を確認して、以下のルールで指定場所を決める。
+
+| 状況 | 指定場所 |
+|---|---|
+| サイト全体で同じ color | `body` に1箇所だけ書く |
+| セクション内は同じだがサイト全体では異なる | そのセクションの親クラスに書く |
+| 要素ごとにバラバラ | 該当クラスに個別に書く |
+
+```css
+/* ✅ 全部 #000 なら body に1箇所 */
+body { color: #000; }
+
+/* ✅ セクションで違うなら親クラスに */
+.news_area     { color: #000000; }
+.products_area { color: #ffffff; }
+```
+
+> ⚠ `color` も font-family と同様に重複して書かない。上位クラスにまとめる。
+
 
 ---
 
@@ -80,7 +146,7 @@ Grep でクラスごとの `font-size` / `font-weight` を抽出する。
 | .access_hall | 10rem / 400 | 28px / Bold | ✅修正対象 |
 
 **照合ルール**:
-- `font-size`: JSONのpx値 ÷ 10 = remの正解値（例: 24px → 2.4rem）
+- `font-size`: Step 3 で確認した rem 基準をもとに px → rem 変換する（÷10 か ÷16 かはプロジェクトによる）
 - `font-weight`: Regular → 400 / Bold → bold（または700）/ Light → 300
 - HTMLで1つの`<p>`に異なるサイズが混在している場合は「報告対象」とする
 
