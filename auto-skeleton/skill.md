@@ -62,6 +62,28 @@ HTMLの構造を読み取り、CSSスケルトン（空ルールセット+コメ
 - **横並び（flex-direction: row / grid横）の子** ➡ `（左）` `（右）` をつける
 - **縦並びの子** ➡ つけない（上から下は自明）
 
+### 🚨 writing-mode: vertical-rl のときは方向が逆になる（絶対厳守）
+
+親要素またはその祖先に `writing-mode: vertical-rl` がある場合、flex の方向は逆転する。
+
+| writing-mode | flex-direction | 実際の並び方 | コメント |
+|---|---|---|---|
+| 通常 | row | 横並び | 【flex 横N列】 |
+| 通常 | column | 縦並び | 【flex 縦N行】 |
+| vertical-rl | row | **縦並び** | 【flex 縦N行】 |
+| vertical-rl | column | **横並び** | 【flex 横N列】 |
+
+```css
+/* ✅ writing-mode: vertical-rl の親の中では column = 横並び */
+/* ヘッダー内側【flex 横2列: ロゴ + ナビ】 */
+.header_inner {
+  display: flex;
+  flex-direction: column; /* vertical-rl環境では横並び */
+}
+```
+
+> CSSを書く前に、対象要素の祖先に `writing-mode` があるか必ず確認する。
+
 ### 4. 親と子のコメントは同じ言葉で対応させる
 親: `【flex 横2列: サムネイル + テキスト側】`
 子: `└ サムネイル（左）` / `└ テキスト側（右）`
