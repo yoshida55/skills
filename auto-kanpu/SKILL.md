@@ -23,16 +23,26 @@ user-invocable: true
 
 ---
 
+## 🚫 絶対禁止ルール（これを破ったら全部やり直し）
+
+> **ズレ一覧をユーザーに提示して「修正して」と言われるまで、CSSを1行も書いてはいけない。**
+> ❌ 照合途中でEditツールを使う → 禁止
+> ❌ 「たぶんここがズレてる」と思っても先に直す → 禁止
+> ✅ 全項目照合 → ズレ一覧提示 → ユーザーOK → 一括修正 → 正しい順序
+
+---
+
 ## 🚀 Step 0. TodoWriteでチェックリスト表示（絶対厳守・スキル開始直後に必ず実行）
 
 ```
 TodoWrite([
-  { content: "デザインカンプ（JSON）を受け取る（既にあればスキップ）", status: "in_progress" },
-  { content: "rem基準を確認（デフォルト1rem=10px）",               status: "pending" },
-  { content: "対象セレクタをGrepで特定（ユーザー指定があればスキップ）", status: "pending" },
-  { content: "JSONとCSSを照合 → ズレ一覧を作成する",               status: "pending" },
-  { content: "バックグラウンドで自動修正",                         status: "pending" },
-  { content: "残り問題をユーザーに報告する",                       status: "pending" }
+  { content: "デザインカンプ（JSON）を受け取る（既にあればスキップ）",      status: "in_progress", activeForm: "JSON受け取り中" },
+  { content: "rem基準をユーザーに確認（自分でGrepしない）",                 status: "pending",     activeForm: "rem基準確認中" },
+  { content: "対象セレクタをGrepで特定",                                   status: "pending",     activeForm: "セレクタ特定中" },
+  { content: "全項目照合（font/color/spacing/余白/サイズ）→ ズレ一覧作成", status: "pending",     activeForm: "全項目照合中" },
+  { content: "🚫 ズレ一覧をユーザーに提示・OKをもらう（修正はまだしない）", status: "pending",     activeForm: "ズレ一覧提示中" },
+  { content: "一括修正（ユーザーOK後のみ実行）",                           status: "pending",     activeForm: "一括修正中" },
+  { content: "残り問題をユーザーに報告",                                   status: "pending",     activeForm: "残り報告中" }
 ])
 ```
 
@@ -92,14 +102,13 @@ JSONが届いたら：
 
 ### Step 3. CSS読み込み + rem基準確認
 
-#### ⚡ rem基準のデフォルト（Grep不要・人間介入不要）
+#### ⚡ rem基準の確認方法（最速手順）
 
-**デフォルト: 1rem = 10px（px ÷ 10）** として計算を進める。
+**まずユーザーに1行聞く（自分でGrepしない）：**
 
-以下のどれかに該当する場合のみ、Grepで確認する：
-- ユーザーが「remがおかしい」と言った
-- CSSの計算結果が明らかにズレている
-- 初めて触るプロジェクト
+> 「`html { font-size` の行を貼ってもらえますか？（style.css か reset.css にあります）」
+
+ユーザーが貼った行を見て判断する：
 
 | htmlのfont-size | 1rem = ? | px → rem 変換 |
 |---|---|---|
@@ -107,11 +116,33 @@ JSONが届いたら：
 | `calc(10 / 1400 * 100vw)` | 1400px幅で10px | px ÷ 10 |
 | `100%`（未指定） | 16px | px ÷ 16 |
 
-確認が必要な場合: `Grep "html { font-size" css/style.css`
+#### ❌ やってはいけないこと
+- 自分で `work.css` → 「見つからない」 → `style.css` → ... と複数ファイルを探し回る
+- ユーザーに聞けばすぐ解決するのに、Grepで時間をかける
+
+#### ✅ ユーザーが既にどこかに貼っていたら
+会話の中に `font-size: calc(...)` や `font-size: 62.5%` が出ていればそれを使う（改めて聞かない）
 
 ---
 
 ### Step 4. JSONとCSSを照合
+
+> ## 🚨 照合チェックリスト（絶対厳守・セクションごとに必ず全項目確認）
+> TodoWriteで以下を出してからチェックを始める。1項目でも飛ばしたら全部やり直し。
+>
+> ```
+> TodoWrite([
+>   { content: "font-size 確認（textSize）",         status: "pending", activeForm: "font-size 確認中" },
+>   { content: "font-family 確認（textFamily）",      status: "pending", activeForm: "font-family 確認中" },
+>   { content: "letter-spacing 確認（letterSpacing）",status: "pending", activeForm: "letter-spacing 確認中" },
+>   { content: "line-height 確認（lineHeight）",       status: "pending", activeForm: "line-height 確認中" },
+>   { content: "color 確認（color）",                  status: "pending", activeForm: "color 確認中" },
+>   { content: "background-color 確認（shapeの色）",   status: "pending", activeForm: "background-color 確認中" },
+>   { content: "width / height 確認（w, h）",          status: "pending", activeForm: "width/height 確認中" },
+>   { content: "margin / padding 確認（x, y座標）",    status: "pending", activeForm: "余白 確認中" },
+>   { content: "ズレ一覧をユーザーに報告",              status: "pending", activeForm: "ズレ一覧 報告中" }
+> ])
+> ```
 
 #### 照合する項目
 
@@ -200,9 +231,56 @@ JSONが届いたら：
 - `margin` / `padding` のズレ修正（座標計算から算出）
 - AIコメント削除（`/* ○○px - JSON */` など）
 
+#### ✅ CSS修正後の自己チェック（修正のたびに必ず確認・TodoWrite不要）
+
+CSSを1つ書いたら、適用前に以下を声に出して確認する：
+
+```
+① この値は親要素の高さ・幅に依存していないか？
+   例: height: 100% → 親にheightが設定されていないと効かない / 子が崩れる
+
+② 子要素に想定外の影響が出ないか？
+   例: .item { height: 23rem } → 中の img が height:100% を使っていたら崩れる
+
+③ 他のプロパティと矛盾していないか？
+   例: display: flex と float の併用 / position: absolute と margin: auto の混在
+```
+
+NGがあれば修正してから報告する。OKなら適用してよい。
+
 ---
 
-### Step 6. 残り問題をユーザーに報告
+### Step 6. 修正チェックリストをユーザーに提示 → 一括修正
+
+#### 🚨 絶対厳守：ユーザーに2回言わせない
+
+照合が終わったら、**修正対象を全件チェックリスト形式で提示**してユーザーに確認してもらう。
+ユーザーが「修正して」と言ったら一括で全部修正する。
+
+```
+## 修正チェックリスト（全○件）
+
+### ヘッダー
+- [ ] .header_area: background-color gray → white
+- [ ] .header_area: padding-left 0 → 9.1rem
+- [ ] .header_button: width 14rem → 20rem
+
+### NEWSセクション
+- [ ] .title: font-size 2.4rem → 3.6rem
+- [ ] .news_date: font-size 1.2rem → 1.4rem
+...
+
+全部まとめて修正しますか？
+```
+
+#### ❌ やってはいけないこと
+- 一部だけ修正してユーザーに残りを2回目で言わせる
+- 「⚠ 手動確認が必要」として放置して、ユーザーが再度指摘するまで直さない
+- 修正リストを出さずにいきなりファイルを書き換える
+
+---
+
+### Step 7. 残り問題をユーザーに報告
 
 ```
 ## auto-kanpu 結果
