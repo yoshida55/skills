@@ -25,12 +25,22 @@ description: 今日のミスを00_mis_log.mdに1行で記録する
 test -f "D:\50_knowledge\00_mis_log.md" && echo "home" || echo "company"
 ```
 
-### Step 2: 今日の日付セクションがあるか確認
-- Grep で `## 2026-03-30`（今日の日付）を検索
-- ✅ あれば → その日付セクションの末尾に追記
-- ❌ なければ → ファイル末尾に新しい日付セクションを追加
+### Step 2: 今日の日付セクションがあるか確認してから書き込む
 
-### Step 3: ミス内容を1行で追記する
+必ず以下のBashロジックで書き込む（日付の重複を防ぐ）：
+
+```bash
+TODAY=$(date +%Y-%m-%d)
+FILE="D:/50_knowledge/00_mis_log.md"  # 自宅PC
+
+if grep -q "## $TODAY" "$FILE"; then
+  # ✅ 今日の日付セクションがある → 内容だけ追記
+  printf -- "- 内容\n" >> "$FILE"
+else
+  # ❌ 今日の日付セクションがない → 日付セクションを作ってから追記
+  printf "\n## %s\n\n- 内容\n" "$TODAY" >> "$FILE"
+fi
+```
 
 フォーマット：
 ```
