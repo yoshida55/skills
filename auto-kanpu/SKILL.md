@@ -128,21 +128,40 @@ JSONが届いたら：
 ### Step 4. JSONとCSSを照合
 
 > ## 🚨 照合チェックリスト（絶対厳守・セクションごとに必ず全項目確認）
-> TodoWriteで以下を出してからチェックを始める。1項目でも飛ばしたら全部やり直し。
+> **JSONとCSSの比較を1文字も始める前に、必ず以下のTodoWriteを実行する。**
+> ❌ このTodoWriteを出さずに照合を始めた → 全部やり直し
+> ❌ 「目視でまとめて比較する」はNG → 必ず1項目ずつTodoWriteで潰す
+> ✅ TodoWrite → 1項目ずつ確認 → completed → 次の項目 → 正しい順序
 >
 > ```
 > TodoWrite([
->   { content: "font-size 確認（textSize）",         status: "pending", activeForm: "font-size 確認中" },
->   { content: "font-family 確認（textFamily）",      status: "pending", activeForm: "font-family 確認中" },
->   { content: "letter-spacing 確認（letterSpacing）",status: "pending", activeForm: "letter-spacing 確認中" },
->   { content: "line-height 確認（lineHeight）",       status: "pending", activeForm: "line-height 確認中" },
->   { content: "color 確認（color）",                  status: "pending", activeForm: "color 確認中" },
->   { content: "background-color 確認（shapeの色）",   status: "pending", activeForm: "background-color 確認中" },
->   { content: "width / height 確認（w, h）",          status: "pending", activeForm: "width/height 確認中" },
->   { content: "margin / padding 確認（x, y座標）",    status: "pending", activeForm: "余白 確認中" },
->   { content: "ズレ一覧をユーザーに報告",              status: "pending", activeForm: "ズレ一覧 報告中" }
+>   { content: "font-size 確認（textSize）",         status: "in_progress", activeForm: "font-size 確認中" },
+>   { content: "font-family 確認（textFamily）",      status: "pending",     activeForm: "font-family 確認中" },
+>   { content: "letter-spacing 確認（letterSpacing）",status: "pending",     activeForm: "letter-spacing 確認中" },
+>   { content: "line-height 確認（lineHeight）",       status: "pending",     activeForm: "line-height 確認中" },
+>   { content: "color 確認（color）",                  status: "pending",     activeForm: "color 確認中" },
+>   { content: "background-color 確認（shapeの色）",   status: "pending",     activeForm: "background-color 確認中" },
+>   { content: "width / height 確認（w, h）",          status: "pending",     activeForm: "width/height 確認中" },
+>   { content: "margin / padding 確認（x, y座標）",    status: "pending",     activeForm: "余白 確認中" },
+>   { content: "ズレ一覧をユーザーに報告",              status: "pending",     activeForm: "ズレ一覧 報告中" }
 > ])
 > ```
+>
+> ## 🚨 未設定チェック（絶対厳守・各項目で必ず確認）
+> 各プロパティを確認するとき「値が違う」だけでなく「CSSにそのプロパティ自体がない」も必ずチェックする。
+> **未設定 = 親やbodyの値を継承 = デザインと違う値になっている可能性がある。**
+>
+> ```
+> チェック手順（font-sizeを例に）：
+> 1. JSONの textSize を確認 → 例: 14px = 1.4rem
+> 2. 対象クラスのCSS を確認
+>    → font-size が書いてある場合 → 値を比較する
+>    → font-size が書いていない場合 → 親から何を継承しているか確認する
+>       → htmlのfont-sizeが10pxなら、未設定 = 10px表示 ≠ 14px → ❌ 追加が必要
+> ```
+>
+> ❌ 「値が書いてないから問題なし」と判断してはいけない
+> ✅ 「値が書いていない = 継承値を確認する」が正しい手順
 
 #### 照合する項目
 
