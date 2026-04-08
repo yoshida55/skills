@@ -1,0 +1,8 @@
+{
+  "name": "deliver",
+  "description": "現在のプロジェクトを納品用にクリーンコピー→圧縮→指定フォルダへ移動する",
+  "version": "1.0.0",
+  "author": "User",
+  "tags": ["deliver", "zip", "package", "clean", "submit"],
+  "invocable": true
+}
