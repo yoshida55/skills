@@ -4,8 +4,8 @@
 
 ```
 1. PC判定（自宅 or 会社）※1会話1回だけ
-2. Grep（重複チェック）+ Grep（01_memo.md末尾アンカー）+ Read（00_mis_log.md末尾） ← 3つ同時
-3. Edit（01_memo.md）+ Edit（00_mis_log.md） ← 2つ同時
+2. Read（01_memo_index.txt）+ Read（00_mis_log.md末尾） ← 2つ同時
+3. Edit（01_memo.md）+ Edit（00_mis_log.md）+ Edit（01_memo_index.txt） ← 3つ同時
 4. 行番号報告 + VS Codeハイライト（01_memo.md のみ）
 ```
 
@@ -14,16 +14,46 @@
 ```
 Step1: TodoWrite
 Step2: Bash（PC判定）← 1会話1回のみ
-Step3: [並列] Grep重複チェック + Grep末尾アンカー（01_memo.md）+ Read末尾（00_mis_log.md）
-Step4: [並列] Edit（01_memo.md）+ Edit（00_mis_log.md）
+Step3: [並列] Read（01_memo_index.txt）+ Read末尾（00_mis_log.md）
+Step4: [並列] Edit（01_memo.md末尾）+ Edit（00_mis_log.md）+ Edit（01_memo_index.txt末尾）
 ```
 
-- `wc -l` + `Read末尾` は使わない → Grep で末尾近くの固定テキストを探してアンカーにする
+- **重複チェックは 01_memo_index.txt だけ読めばOK**（19,000行のGrep不要）
 - 依存関係のないツール呼び出しは必ず同時実行する
 
 ---
 
-# 出力先（2ファイルに同時書き込み）
+# インデックスファイル（高速重複チェック）
+
+## 📋 01_memo_index.txt とは
+
+`01_memo.md` に書いた全エントリのキーワードを1行ずつまとめた小さなファイル。
+
+- 自宅PC: `D:\50_knowledge\01_memo_index.txt`
+- 会社PC: `C:\Users\guest04\Desktop\高橋研三\03_knowledge\01_memo_index.txt`
+
+## 重複チェックの手順
+
+1. `Read` で `01_memo_index.txt` を読み込む（数百行・一瞬で読める）
+2. 今から書こうとしているトピックと**キーワードが似ている行**がないか確認する
+3. 似ている行があれば → 既存エントリを更新（01_memo.md の該当箇所を Grep → Edit）
+4. なければ → 末尾に追記（01_memo.md + 01_memo_index.txt 両方に追加）
+
+## インデックスへの追記フォーマット（1行）
+
+```
+キーワード1 キーワード2 キーワード3 | タグ（HTML / WordPress / CSS など）
+```
+
+例：
+```
+margin-top: auto 直接のflex子 入れ子 親もflexにする | HTML CSS
+wp_footer() JS body直前 wp_head() | WordPress
+```
+
+---
+
+# 出力先（3ファイルに書き込み）
 
 ## 📘 詳細メモ（説明・仕組み）
 存在する方に追記:
@@ -34,6 +64,10 @@ Step4: [並列] Edit（01_memo.md）+ Edit（00_mis_log.md）
 存在する方に追記:
 - 会社PC: `C:\Users\guest04\Desktop\高橋研三\03_knowledge\00_mis_log.md`
 - 自宅PC: `D:\50_knowledge\00_mis_log.md`
+
+## 📋 インデックス（重複チェック用）
+- 会社PC: `C:\Users\guest04\Desktop\高橋研三\03_knowledge\01_memo_index.txt`
+- 自宅PC: `D:\50_knowledge\01_memo_index.txt`
 
 判定方法: Bash で `test -f` を実行し、存在する方を使用
 
@@ -49,7 +83,7 @@ Step4: [並列] Edit（01_memo.md）+ Edit（00_mis_log.md）
 - タイトルは「読んだだけで答えがわかる」レベル
 - 【日付】【結論】【具体例】【補足】の構成
 - カテゴリタグ（`WordPress` / `HTML`）を末尾に付ける
-- 重複チェック必須（あれば既存を更新・なければ末尾追記）
+- 重複チェックは **01_memo_index.txt を Read するだけ**（01_memo.md 本体の Grep 不要）
 
 ## 📒 00_mis_log.md（気づき・ミス）
 → **memo_days スキルと同じフォーマット**で書く
