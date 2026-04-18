@@ -20,6 +20,20 @@ Step4: 重複チェック（← 必ず実施・絶対に飛ばさない）
 Step5: mcp__auto-memo__memo_write_all（highlight_line を渡してhighlight内蔵）
 ```
 
+## ⚡⚡ 同一会話内の2回目以降はさらに速くなる
+
+- **Step2（PC判定）はスキップ**：1会話に1回だけでOK
+- **Step3（memo_read_context）もスキップ可**：同一会話内ならインデックスは記憶済み
+- 重複チェックは記憶したインデックスをそのまま使う
+- **memo_write_all だけ実行**すれば完結
+
+```
+通常（1回目）: TodoWrite → PC判定 → memo_read_context → 重複チェック → memo_write_all
+2回目以降:     TodoWrite → 重複チェック（記憶済み）→ memo_write_all だけ ← 最速
+```
+
+> ⚠ 会話をまたぐとインデックスの記憶はリセットされる → 次の会話では必ず Step3 から実行すること
+
 - **Read ツール不要**（indexも memo_read_context が取得）
 - **curl 不要**（highlight は memo_write_all に内蔵）
 - **書き込みは MCP が一括処理**（Edit × 3 + Write × 1 が mcp 呼び出し1回に集約）
@@ -117,6 +131,12 @@ wp_footer() JS body直前 wp_head() | WordPress
 - 【日付】【結論】【具体例】【補足】の構成
 - カテゴリタグ（`WordPress` / `HTML`）を末尾に付ける
 - 重複チェックは **01_memo_index.txt を Read するだけ**（01_memo.md 本体の Grep 不要）
+
+### ⚠ 具体例コードのルール（絶対厳守）
+- **最小コードでも「実際に動くもの」を書く**
+- `add_action` のラップが必要なら省かない
+- `wp_enqueue_style` の第1引数など省略すると動かなくなる部分は必ず入れる
+- 「わかりやすさのために省略」は禁止 → 動かないコードはメモとして有害
 
 ### ✅ 正しいタイトル・日付フォーマット（厳守）
 
