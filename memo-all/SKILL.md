@@ -4,23 +4,25 @@
 
 ```
 1. PC判定（自宅 or 会社）※1会話1回だけ
-2. Read（01_memo_index.txt）+ Read（00_mis_log.md末尾）+ Read（last_config.json） ← 3つ同時
-3. Edit（01_memo.md）+ Edit（00_mis_log.md）+ Edit（01_memo_index.txt）+ Write（last_config.json更新） ← 同時
-4. 行番号報告 + VS Codeハイライト（01_memo.md のみ）
+2. mcp__auto-memo__memo_read_context（index_path指定）← 1回で log + config + index全件を取得
+3. 重複チェック（インデックス全件を Claude が判断）← 必ず実施
+4. mcp__auto-memo__memo_write_all（highlight_line含む）← 1回で全完結
 ```
 
-## ⚡ 最速フロー（4ステップ / 2回目以降は3ステップ）
+## ⚡ 最速フロー（3ステップ / 2回目以降も同じ）
 
 ```
 Step1: TodoWrite
 Step2: Bash（PC判定）← 1会話1回のみ
-Step3: [並列] Read（01_memo_index.txt）+ Read末尾（00_mis_log.md）+ Read（last_config.json）
-Step4: [並列] Edit（01_memo.md末尾）+ Edit（00_mis_log.md）+ Edit（01_memo_index.txt末尾）+ Write（last_config.json更新）
+Step3: mcp__auto-memo__memo_read_context（log_path + config_path + index_path を渡す）
+        → log_tail + config（last_memo_line）+ index（全件）を1回で取得
+Step4: 重複チェック（← 必ず実施・絶対に飛ばさない）
+Step5: mcp__auto-memo__memo_write_all（highlight_line を渡してhighlight内蔵）
 ```
 
-- **重複チェックは 01_memo_index.txt だけ読めばOK**（19,000行のGrep不要）
-- **01_memo.md の末尾行番号は last_config.json の `last_memo_line` を使う**（wc -l と Read末尾が不要になる）
-- 依存関係のないツール呼び出しは必ず同時実行する
+- **Read ツール不要**（indexも memo_read_context が取得）
+- **curl 不要**（highlight は memo_write_all に内蔵）
+- **書き込みは MCP が一括処理**（Edit × 3 + Write × 1 が mcp 呼び出し1回に集約）
 
 ## 📌 last_config.json の場所と使い方
 
@@ -48,12 +50,27 @@ Step4: [並列] Edit（01_memo.md末尾）+ Edit（00_mis_log.md）+ Edit（01_m
 - 自宅PC: `D:\50_knowledge\01_memo_index.txt`
 - 会社PC: `C:\Users\guest04\Desktop\高橋研三\03_knowledge\01_memo_index.txt`
 
-## 重複チェックの手順
+## 重複チェックの手順（絶対厳守）
 
-1. `Read` で `01_memo_index.txt` を読み込む（数百行・一瞬で読める）
-2. 今から書こうとしているトピックと**キーワードが似ている行**がないか確認する
-3. 似ている行があれば → 既存エントリを更新（01_memo.md の該当箇所を Grep → Edit）
-4. なければ → 末尾に追記（01_memo.md + 01_memo_index.txt 両方に追加）
+memo_read_context で取得した `index` の全行を必ず確認する。
+
+### ✅ 重複と判断する条件（どれか1つでも当てはまれば既存エントリを更新）
+- 同じ関数名・プロパティ名・クラス名が含まれている
+- 同じ概念・同じ操作（例：「アーカイブ」「ループ」「カスタム投稿」など）が含まれている
+- 同じジャンル・シリーズ（例：「ギャグ」「テスト」「天気」など）の続きにあたる
+- タイトルが違っても**内容が同じ知識**を説明している
+
+### ❌ 「キーワードが1語も被らなければ新規」は禁止
+- 「ギャグその２」は「ギャグ」と同じシリーズ → 既存エントリに追記すべき
+- 「archive-works.php」と「archive.php」は別ファイルでも概念が近い → 既存エントリを更新
+
+### 判断フロー
+```
+インデックス全件を見る
+  ↓
+似た行がある → 既存エントリを更新（Grep → memo.md の該当箇所を Edit）
+似た行がない → 新規追記（memo_write_all）
+```
 
 ## インデックスへの追記フォーマット（1行）
 
