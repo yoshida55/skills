@@ -94,15 +94,22 @@ HTMLの構造を読み取り、CSSスケルトン（空ルールセット+コメ
 
 ## 🎯 実行フロー
 
-### 0. TodoWriteでチェックリスト表示（絶対厳守）
+### 0. 書き先CSSファイルを確認（絶対厳守・最初に1行だけ聞く）
+
+> 「書き先のCSSファイルはどれですか？（例: work.css / style.css）」
+
+- 会話の中に既に出ていれば聞かない
+- 答えをもらったら、以降そのファイルだけに書く
+
+### 0b. TodoWriteでチェックリスト表示（絶対厳守）
 スキル開始時に**必ず**以下のTodoWriteを実行し、チャット画面にチェックリストを表示する。
 各ステップ完了ごとにstatusを `completed` に更新すること。
 
 ```
 TodoWrite([
+  { content: "書き先CSSファイルを確認",                status: "completed",   activeForm: "書き先CSS確認中" },
   { content: "HTMLからクラス名・構造を読み取る",       status: "in_progress", activeForm: "HTMLからクラス名・構造を読み取り中" },
-  { content: "CSSスケルトン生成 → ファイルに追記",     status: "pending",     activeForm: "CSSスケルトン生成・追記中" },
-  { content: "HTMLコメントをCSS基準で更新",            status: "pending",     activeForm: "HTMLコメントをCSS基準で更新中" }
+  { content: "CSSスケルトン生成 + HTMLコメント更新（同時実行）", status: "pending", activeForm: "CSSスケルトン生成・HTMLコメント更新中" }
 ])
 ```
 
@@ -148,6 +155,22 @@ TodoWrite([
 /* 詳細文 */
 .news_text {
 }
+```
+
+### 2b. CSSとHTMLコメントは同時に書く（必ず並列実行）
+
+> ⚡ CSSへの追記 と HTMLコメントの更新 は**独立した作業**なので、Editツールを同じメッセージで2つ同時に呼ぶ。
+> 直列に書くと待ち時間が発生するため禁止。
+
+```
+// ✅ 正しい（同時）
+Edit(CSSファイル, ...)  ← 同じメッセージに
+Edit(HTMLファイル, ...)  ← 両方まとめて
+
+// ❌ 禁止（直列）
+Edit(CSSファイル, ...)
+→ 完了を待ってから
+Edit(HTMLファイル, ...)
 ```
 
 ### 3. HTMLコメントもCSSに合わせて更新

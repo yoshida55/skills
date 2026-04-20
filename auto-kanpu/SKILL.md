@@ -37,7 +37,7 @@ user-invocable: true
 ```
 TodoWrite([
   { content: "デザインカンプ（JSON）を受け取る（既にあればスキップ）",      status: "in_progress", activeForm: "JSON受け取り中" },
-  { content: "rem基準をユーザーに確認（自分でGrepしない）",                 status: "pending",     activeForm: "rem基準確認中" },
+  { content: "rem基準：デフォルト 1rem = 10px で計算（冒頭にメッセージ表示）", status: "completed",   activeForm: "rem基準確認中" },
   { content: "対象セレクタをGrepで特定",                                   status: "pending",     activeForm: "セレクタ特定中" },
   { content: "全項目照合（font/color/spacing/余白/サイズ）→ ズレ一覧作成", status: "pending",     activeForm: "全項目照合中" },
   { content: "🚫 ズレ一覧をユーザーに提示・OKをもらう（修正はまだしない）", status: "pending",     activeForm: "ズレ一覧提示中" },
@@ -102,26 +102,15 @@ JSONが届いたら：
 
 ### Step 3. CSS読み込み + rem基準確認
 
-#### ⚡ rem基準の確認方法（最速手順）
+#### ⚡ rem基準のデフォルトルール
 
-**まずユーザーに1行聞く（自分でGrepしない）：**
+**スキル開始時に必ずこのメッセージを出す（確認は不要）：**
 
-> 「`html { font-size` の行を貼ってもらえますか？（style.css か reset.css にあります）」
+> 「1rem = 10px で計算します。違う場合は教えてください。」
 
-ユーザーが貼った行を見て判断する：
-
-| htmlのfont-size | 1rem = ? | px → rem 変換 |
-|---|---|---|
-| `62.5%` | 10px | px ÷ 10 |
-| `calc(10 / 1400 * 100vw)` | 1400px幅で10px | px ÷ 10 |
-| `100%`（未指定） | 16px | px ÷ 16 |
-
-#### ❌ やってはいけないこと
-- 自分で `work.css` → 「見つからない」 → `style.css` → ... と複数ファイルを探し回る
-- ユーザーに聞けばすぐ解決するのに、Grepで時間をかける
-
-#### ✅ ユーザーが既にどこかに貼っていたら
-会話の中に `font-size: calc(...)` や `font-size: 62.5%` が出ていればそれを使う（改めて聞かない）
+- ユーザーが止めなければそのまま進む
+- 会話の中に別の `font-size: calc(...)` や `font-size: 62.5%` が出ていればそちらを優先する
+- ユーザーに聞くのは禁止（止めてもらえば変更する）
 
 ---
 
@@ -136,7 +125,7 @@ JSONが届いたら：
 > ```
 > TodoWrite([
 >   { content: "font-size 確認（textSize）",         status: "in_progress", activeForm: "font-size 確認中" },
->   { content: "font-family 確認（textFamily）",      status: "pending",     activeForm: "font-family 確認中" },
+>   { content: "font-family 確認（bodyに設定済みなら個別に書かない・差異がある場合のみ追記）", status: "pending", activeForm: "font-family 確認中" },
 >   { content: "letter-spacing 確認（letterSpacing）",status: "pending",     activeForm: "letter-spacing 確認中" },
 >   { content: "line-height 確認（lineHeight）",       status: "pending",     activeForm: "line-height 確認中" },
 >   { content: "color 確認（color）",                  status: "pending",     activeForm: "color 確認中" },
@@ -175,6 +164,7 @@ JSONが届いたら：
 | `y`（要素間の距離） | `margin-top` / `padding-top` |
 | `x`（要素間の距離） | `margin-left` / `padding-left` |
 | `w`, `h` | `width`, `height` |（**必ずセットで確認。片方だけ修正しない**）|
+| `distanceToLeft` / `distanceToRight` | `padding-left` / `padding-right` |（**値がある要素は padding 候補として照合リストに必ず載せる**）|
 
 #### 座標から余白を計算する方法
 
@@ -236,6 +226,16 @@ JSONが届いたら：
    - 全体で同じ → `body` に1箇所
    - セクション内で同じ → 親クラスに1箇所
    - 個別バラバラ → 該当クラスに個別
+
+4. **font-family の照合ルール（絶対厳守）**
+   - 照合前に `body { font-family }` が設定済みか必ず確認する
+   - `body` に設定済み → 個別要素には **書かない**（継承されるため）
+   - `body` のフォントと **異なる場合のみ** 個別要素に追記する
+   ```
+   ✅ body { font-family: "Noto Sans JP" } が設定済み
+      → 同じフォントの要素 → 個別に書かない
+      → 別フォント（例: Yu Mincho）の要素 → その要素だけ書く
+   ```
 
 #### 自動修正する項目
 
