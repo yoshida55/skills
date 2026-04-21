@@ -235,12 +235,7 @@ margin-top: auto
 
 # 追記後の報告
 
-- `01_memo.md` の追記行番号を報告する
-- VS Codeハイライトを実行する（自宅PC）:
-  ```bash
-  curl -s -X POST http://127.0.0.1:3848/highlight-line -H "Content-Type: application/json" --data-binary "{\"filePath\": \"D:/50_knowledge/01_memo.md\", \"lineNumber\": 追記開始行番号}"
-  ```
-- curlが失敗してもエラーは無視してよい
+- 行番号・ハイライトの報告は不要
 
 ---
 
