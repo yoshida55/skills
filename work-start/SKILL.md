@@ -12,17 +12,30 @@ restartとoriginの最新を取り込む。
 
 ## 実行手順
 
-### Step 1: restartのデフォルトブランチ名を取得
+### Step 1: restartのデフォルトブランチ名を取得（保存ファイル優先）
+まず setup-project で保存された `.git/restart-branch` を読む：
+```
+cat .git/restart-branch
+```
+
+**ファイルが存在する場合**：その値を使う（推奨ルート）。
+
+**ファイルが存在しない or 空の場合**（旧プロジェクト等）：fallback で動的取得する：
 ```
 git remote show restart | grep "HEAD branch"
 ```
-通常は `main`、稀に `master` の場合がある。取得した名前を以降のpullで使う。
-
 取得に失敗した場合は `main` を仮定する。
+※ 動的取得した場合は念のため保存しておく：
+```
+git symbolic-ref refs/remotes/restart/HEAD | sed 's@^refs/remotes/restart/@@' > .git/restart-branch
+```
+
+取得したブランチ名を変数 `$RESTART_BRANCH` として以降のステップで使う。
 
 ### Step 2: restartに該当ブランチがあるか確認
 ```
-git ls-remote --heads restart （取得したブランチ名）
+RESTART_BRANCH=$(cat .git/restart-branch)
+git ls-remote --heads restart "$RESTART_BRANCH"
 ```
 
 **結果が空の場合**（初回・restartが空）：
@@ -32,7 +45,8 @@ git ls-remote --heads restart （取得したブランチ名）
 
 ### Step 3: restartの最新を取り込む
 ```
-git pull restart （取得したブランチ名）
+RESTART_BRANCH=$(cat .git/restart-branch)
+git pull restart "$RESTART_BRANCH"
 ```
 
 ⚠ 競合が発生した場合（CONFLICT メッセージ）：

@@ -99,7 +99,7 @@ git ls-files | grep -E "^(CLAUDE\.md|sankou/|\.claude/)"
 git rm --cached （該当ファイル）
 ```
 
-### Step 6: restartのデフォルトブランチ名を取得
+### Step 6: restartのデフォルトブランチ名を取得＆保存
 ```
 git remote show origin | grep "HEAD branch"
 ```
@@ -109,8 +109,19 @@ git symbolic-ref refs/remotes/origin/HEAD | sed 's@^refs/remotes/origin/@@'
 ```
 ※ この時点ではまだ「origin = RESTARTさんのURL」状態
 
-取得したブランチ名（通常 `main`、稀に `master`）を記録する。
-**以降のスキルではこの名前を使う**ことをユーザーに案内する。
+取得したブランチ名（通常 `main`、稀に `master`）を **`.git/restart-branch` に保存** する：
+```
+git symbolic-ref refs/remotes/origin/HEAD | sed 's@^refs/remotes/origin/@@' > .git/restart-branch
+```
+
+これにより以降のスキル（work-start, work-end）が自動的にこの値を読み込み、master/main を自動判定できる。
+**手動で書き換える必要なし。**
+
+確認：
+```
+cat .git/restart-branch
+```
+→ `main` または `master` が表示されればOK。
 
 ### Step 7: originをrestartに名前変更
 cloneすると自動で「origin = RESTARTさんのURL」が登録されている。
