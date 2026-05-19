@@ -8,18 +8,40 @@ RESTARTさんからのスキルチェック課題（Webサイト全8ページの
 
 ## 概要
 RESTARTさんの案件の初回セットアップを最初から全部行う。
-clone・exclude設定・リモートの名前変更・自分のGitHub追加・ブランチ作成を自動で行う。
+clone・exclude設定・リモート設定・自分のブランチ作成・pre-push hook 設置を自動で行う。
+
+**会社PCと家PCの両方に対応**：
+- 会社PC: restart から clone（公式リポジトリが起点）
+- 家PC: 自分の origin から clone（会社で push 済の最新作業を取得）
+
 **再実行も可能**（既にセットアップ済みのフォルダで実行すると、足りない設定だけ補完する）。
 
 ## 実行手順
 
-### Step 1: 4つ確認する
-以下を順番にユーザーに聞く。
+### Step 1: 環境確認 + 4つ確認する
 
-1. 「RESTARTさんのリポジトリURLを教えてください」
-2. 「自分のGitHubのリポジトリURLを教えてください」
+まず環境を確認する：
+```
+このセットアップは「会社PC」と「家PC」のどちらですか？(c=会社 / h=家)
+```
+
+**c (会社PC) を選んだ場合** → 以下の順で聞く：
+1. 「RESTARTさんのリポジトリURLを教えてください（cloneの起点）」
+2. 「自分のGitHubのリポジトリURLを教えてください（origin として追加）」
 3. 「自分のブランチ名を教えてください（例：kenzo）」
 4. 「保存先フォルダのパスを教えてください（例：D:\02_作業\プロジェクト名）」
+
+**h (家PC) を選んだ場合** → 以下の順で聞く：
+1. 「自分のGitHubのリポジトリURLを教えてください（cloneの起点、会社で work-end 済の前提）」
+2. 「RESTARTさんのリポジトリURLを教えてください（restart として追加）」
+3. 「自分のブランチ名を教えてください（例：kenzo）」
+4. 「保存先フォルダのパスを教えてください」
+
+⚠ **家PCの前提条件**：会社で最低1回 /work-end して origin に push 済みであること。
+未pushの場合は origin が空なので clone できない。先に会社で /setup-project + /work-end を実行してください。
+
+入力された環境（c/h）と4つの回答を以降で参照する。
+**環境フラグ `$ENV`**（"c" or "h"）として記憶する。
 
 ### Step 2: フォルダ存在チェック
 保存先フォルダが既に存在するか確認する：
@@ -34,10 +56,22 @@ ls "（保存先フォルダのパス）"
 - ある場合：「既にcloneされたフォルダのようです。不足設定だけ補完しますか？(Y/n)」
 - ない場合：「フォルダは存在しますが.gitがありません。中身を確認してください」と止める
 
-### Step 3: cloneする（新規の場合のみ）
+### Step 3: clone する（新規の場合のみ・環境別）
+
+**会社PC (c) の場合**：
 ```
 git clone （RESTARTさんのURL） "（保存先フォルダのパス）"
 ```
+
+**家PC (h) の場合**：
+```
+git clone （自分のGitHubのURL） "（保存先フォルダのパス）"
+```
+
+⚠ 家PCで「remote: Repository is empty.」のエラーが出た場合：
+→ 会社で /work-end が実行されておらず origin がまだ空です。
+→ 会社で先に /setup-project + /work-end を実行してから家でセットアップしてください。
+
 cloneが完了したら保存先フォルダに移動して以降の作業を続ける。
 
 既存フォルダの場合はStep 3をスキップして以降に進む。
@@ -99,23 +133,62 @@ git ls-files | grep -E "^(CLAUDE\.md|sankou/|\.claude/)"
 git rm --cached （該当ファイル）
 ```
 
-### Step 6: restartのデフォルトブランチ名を取得＆保存
-```
-git remote show origin | grep "HEAD branch"
-```
-または
-```
-git symbolic-ref refs/remotes/origin/HEAD | sed 's@^refs/remotes/origin/@@'
-```
-※ この時点ではまだ「origin = RESTARTさんのURL」状態
+### Step 6: リモートの整理（環境別）
 
-取得したブランチ名（通常 `main`、稀に `master`）を **`.git/restart-branch` に保存** する：
+clone直後の origin は環境によって意味が違う：
+- 会社PC: origin = RESTARTさんのURL（rename が必要）
+- 家PC: origin = 自分のGitHub（そのまま使う）
+
+**会社PC (c) の場合**：
+
+origin を restart に名前変更：
 ```
-git symbolic-ref refs/remotes/origin/HEAD | sed 's@^refs/remotes/origin/@@' > .git/restart-branch
+git remote rename origin restart
+```
+既存リポジトリで既にrestartが存在する場合はスキップ。
+
+自分のGitHubを origin として追加：
+```
+git remote add origin （入力された自分のGitHub URL）
+```
+既に origin が存在する場合は `git remote set-url origin （URL）` で上書き。
+
+**家PC (h) の場合**：
+
+origin は既に自分のGitHubを指しているのでそのまま。
+restart を追加するだけ：
+```
+git remote add restart （入力されたRESTART URL）
+```
+既に restart が存在する場合は `git remote set-url restart （URL）` で上書き。
+
+restart のブランチ情報を取り込むため fetch：
+```
+git fetch restart
+```
+
+⚠ fetch しないと次の Step 7 で `refs/remotes/restart/HEAD` が見つからないので必須。
+
+### Step 7: restartのデフォルトブランチを取得＆保存（共通）
+
+リモート整理後、`refs/remotes/restart/HEAD` から restart のデフォルトブランチを取得し、
+`.git/restart-branch` に保存する：
+```
+git symbolic-ref refs/remotes/restart/HEAD | sed 's@^refs/remotes/restart/@@' > .git/restart-branch
 ```
 
 これにより以降のスキル（work-start, work-end）が自動的にこの値を読み込み、master/main を自動判定できる。
 **手動で書き換える必要なし。**
+
+⚠ 取得に失敗した場合のフォールバック：
+```
+git remote show restart | grep "HEAD branch" | awk '{print $NF}' > .git/restart-branch
+```
+
+それでも失敗する場合は手動で：
+```
+echo "main" > .git/restart-branch   # または master
+```
 
 確認：
 ```
@@ -123,23 +196,7 @@ cat .git/restart-branch
 ```
 → `main` または `master` が表示されればOK。
 
-### Step 7: originをrestartに名前変更
-cloneすると自動で「origin = RESTARTさんのURL」が登録されている。
-これをrestartという名前に変える。
-```
-git remote rename origin restart
-```
-
-既存リポジトリで既にrestartが存在する場合はスキップ。
-
-### Step 8: 自分のGitHubをoriginとして追加
-```
-git remote add origin （入力されたURL）
-```
-
-既に origin が存在する場合は `git remote set-url origin （URL）` で上書き。
-
-### Step 9: pre-push hook を設置（restart/main 誤push防止）
+### Step 8: pre-push hook を設置（restart/main 誤push防止）
 TortoiseGit 等の GUI 経由で誤って restart の main/master ブランチに push する事故を
 構造的にブロックするため、`.git/hooks/pre-push` を設置する。
 
@@ -173,7 +230,7 @@ head -3 .git/hooks/pre-push
 ⚠ origin への push は素通り。restart の自分ブランチへの push も素通り。
 ⚠ restart/main(master) 宛の push **のみ**ブロックする。
 
-### Step 10: 確認
+### Step 9: 確認
 ```
 git remote -v
 ```
@@ -183,22 +240,38 @@ origin  = 自分のGitHubのURL
 restart = RESTARTさんのURL
 ```
 
-### Step 11: 自分のブランチを作成して切り替え
-既に該当ブランチがあるかチェック：
+### Step 10: 自分のブランチを作成して切り替え（環境別の補足）
+
+ローカルにブランチが既にあるかチェック：
 ```
 git branch --list （入力されたブランチ名）
 ```
 
-ない場合のみ作成：
+**ローカルに無い場合**：
+
+【会社PC (c) の場合】
+restart からの clone 直後なので、main から自分のブランチを作成：
 ```
 git checkout -b （入力されたブランチ名）
 ```
-ある場合は切り替えのみ：
+
+【家PC (h) の場合】
+origin/main は既に最新の作業を含むので、そこから自分のブランチを作成：
+```
+git checkout -b （入力されたブランチ名）
+```
+あるいは restart/(ブランチ名) が既に存在するなら、そこから直接：
+```
+git checkout -B （入力されたブランチ名） restart/（入力されたブランチ名）
+```
+（fetch 済なのでこのコマンドは使える。前回の会社作業の最終commit hashで揃う）
+
+**ローカルに既にある場合**：切り替えのみ：
 ```
 git checkout （入力されたブランチ名）
 ```
 
-### Step 12: git config の確認（コミット時の名前・メール）
+### Step 11: git config の確認（コミット時の名前・メール）
 コミットには Author名・メールが記録される。RESTARTさんに見える情報なので確認する。
 
 ```
@@ -215,13 +288,14 @@ git config user.email
 これがRESTARTさんに見えるコミット作者情報です。
 - 個人メール（gmail等）が見えても問題ないか？
 - 名前はRESTARTさんが想定している名前と一致しているか？
+- 別PC（会社/家）と同じ name/email になっているか？（違うとAuthor情報が分かれてバレる原因）
 
 問題があれば以下で変更できます：
 git config user.name "（名前）"
 git config user.email "（メール）"
 ```
 
-### Step 13: origin の公開設定 注意喚起
+### Step 12: origin の公開設定 注意喚起
 origin（自分のGitHub）が **public** だと、家での作業履歴が誰でも見える状態になる。
 RESTARTさんが偶然見つけたら一発でバレる。
 
@@ -236,14 +310,14 @@ RESTARTさんが偶然見つけたら一発でバレる。
   RESTARTさんがURLを推測すれば閲覧できてしまいます。
 ```
 
-### Step 14: 完了報告
-以下を伝える：
+### Step 13: 完了報告
+以下を伝える（環境に応じてメッセージを微調整）：
 
 ```
-✅ セットアップ完了！
+✅ セットアップ完了！（環境: 会社PC / 家PC）
 
 【基本情報】
-- restart のデフォルトブランチ: （Step 6で .git/restart-branch に保存済。例: main）
+- restart のデフォルトブランチ: （Step 7で .git/restart-branch に保存済。例: main）
 - 自分のブランチ: （入力されたブランチ名。例: kenzo）
 - pre-push hook: 設置済（restart/main 誤push 防止）
 
@@ -255,6 +329,10 @@ RESTARTさんが偶然見つけたら一発でバレる。
 
 【別PCで作業する場合の注意】
 別のPCで初めて作業する場合も /setup-project を実行してください。
+そのとき「会社PC or 家PC?」を正しく選んでください：
+- 会社PC: restart からclone
+- 家PC: 自分のorigin からclone（会社で push 済の前提）
+
 .git/info/exclude / .git/hooks/pre-push / .git/restart-branch は
 すべてPCごとに設定が必要です（.git/配下なので同期されないため）。
 
