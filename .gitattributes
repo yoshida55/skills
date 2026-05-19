@@ -1,0 +1,3 @@
+# pre-push-template はそのまま .git/hooks/pre-push にコピーされるため、
+# Windows でも必ず LF 改行を維持する（CRLF だと bash 実行時にエラー）
+setup-project/pre-push-template text eol=lf

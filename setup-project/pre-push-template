@@ -1,0 +1,70 @@
+#!/bin/sh
+# pre-push hook: restart の保護ブランチ (main/master) への push をブロック
+#
+# このフックは .git/hooks/ にローカル保存され、リモートには送られない。
+# TortoiseGit 等の GUI 経由で誤って restart/main(master) に push する事故を防ぐ。
+#
+# 保護対象：
+#   1. main             （固定）
+#   2. master           （固定）
+#   3. .git/restart-branch の値（動的、setup-project で保存される）
+#
+# 拒否条件：上記いずれかのブランチ宛、かつ remote が "restart" の場合
+# 許可：origin への push、restart/(自分のブランチ) への push
+
+remote="$1"
+
+# restart リモートでない場合はチェックしない（origin 等は素通し）
+if [ "$remote" != "restart" ]; then
+    exit 0
+fi
+
+# 保護ブランチを構築
+protected="main master"
+restart_branch_file="$(git rev-parse --git-dir)/restart-branch"
+if [ -f "$restart_branch_file" ]; then
+    saved=$(cat "$restart_branch_file" | tr -d '[:space:]')
+    if [ -n "$saved" ]; then
+        protected="$protected $saved"
+    fi
+fi
+
+# stdin から push 対象ブランチを読み取り、保護対象に該当するか判定
+blocked_branches=""
+while read local_ref local_sha remote_ref remote_sha; do
+    # 空行や削除push（remote_ref が空）はスキップ
+    [ -z "$remote_ref" ] && continue
+
+    branch="${remote_ref#refs/heads/}"
+    for p in $protected; do
+        if [ "$branch" = "$p" ]; then
+            blocked_branches="$blocked_branches $branch"
+            break
+        fi
+    done
+done
+
+# 1つでも保護ブランチへの push があれば、push 全体を拒否
+if [ -n "$blocked_branches" ]; then
+    current=$(git branch --show-current 2>/dev/null)
+    echo "" >&2
+    echo "🚫 restart の保護ブランチへの push がブロックされました" >&2
+    echo "" >&2
+    echo "ブロックされたブランチ:$blocked_branches" >&2
+    echo "" >&2
+    echo "理由：" >&2
+    echo "  restart の main/master は RESTART さん管理の公式ブランチです。" >&2
+    echo "  ここに直接 push すると他メンバーの作業を破壊する事故になります。" >&2
+    echo "" >&2
+    echo "正しい push 先：" >&2
+    echo "  restart/(自分のブランチ名)   ← /work-end が自動で push" >&2
+    echo "  origin/main                  ← 自分のGitHub（自由に push 可）" >&2
+    echo "" >&2
+    echo "現在のブランチ: $current" >&2
+    echo "" >&2
+    echo "意図的に外したい場合は .git/hooks/pre-push を削除してください。" >&2
+    echo "" >&2
+    exit 1
+fi
+
+exit 0

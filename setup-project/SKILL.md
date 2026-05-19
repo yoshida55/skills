@@ -139,7 +139,41 @@ git remote add origin （入力されたURL）
 
 既に origin が存在する場合は `git remote set-url origin （URL）` で上書き。
 
-### Step 9: 確認
+### Step 9: pre-push hook を設置（restart/main 誤push防止）
+TortoiseGit 等の GUI 経由で誤って restart の main/master ブランチに push する事故を
+構造的にブロックするため、`.git/hooks/pre-push` を設置する。
+
+スキルディレクトリにテンプレが入っているので、それをコピーする。
+**CRLF→LF 変換を必ず行う**（Windows の autocrlf でCRLFになってると bash がエラーになるため）：
+
+```
+# テンプレ位置（環境ごとに HOME が違うので展開する）
+TEMPLATE="$HOME/.claude/skills/setup-project/pre-push-template"
+HOOK=".git/hooks/pre-push"
+
+# 既存フックがある場合の処理
+if [ -f "$HOOK" ]; then
+    echo "既に pre-push フックが存在します。上書きしますか？(Y/n)"
+    # ユーザー確認 → Yなら上書き、Nならスキップ
+fi
+
+# CRLF を除去しながらコピー（autocrlf 対策）
+tr -d '\r' < "$TEMPLATE" > "$HOOK"
+chmod +x "$HOOK"
+```
+
+確認：
+```
+ls -la .git/hooks/pre-push
+head -3 .git/hooks/pre-push
+```
+→ ファイルが存在し、先頭が `#!/bin/sh` で始まっていればOK。
+
+⚠ このフックは `.git/hooks/` 配下なのでリモートには **絶対に送られない**（restartに見えない）。
+⚠ origin への push は素通り。restart の自分ブランチへの push も素通り。
+⚠ restart/main(master) 宛の push **のみ**ブロックする。
+
+### Step 10: 確認
 ```
 git remote -v
 ```
@@ -149,7 +183,7 @@ origin  = 自分のGitHubのURL
 restart = RESTARTさんのURL
 ```
 
-### Step 10: 自分のブランチを作成して切り替え
+### Step 11: 自分のブランチを作成して切り替え
 既に該当ブランチがあるかチェック：
 ```
 git branch --list （入力されたブランチ名）
@@ -164,7 +198,7 @@ git checkout -b （入力されたブランチ名）
 git checkout （入力されたブランチ名）
 ```
 
-### Step 11: git config の確認（コミット時の名前・メール）
+### Step 12: git config の確認（コミット時の名前・メール）
 コミットには Author名・メールが記録される。RESTARTさんに見える情報なので確認する。
 
 ```
@@ -187,7 +221,7 @@ git config user.name "（名前）"
 git config user.email "（メール）"
 ```
 
-### Step 12: origin の公開設定 注意喚起
+### Step 13: origin の公開設定 注意喚起
 origin（自分のGitHub）が **public** だと、家での作業履歴が誰でも見える状態になる。
 RESTARTさんが偶然見つけたら一発でバレる。
 
@@ -202,15 +236,16 @@ RESTARTさんが偶然見つけたら一発でバレる。
   RESTARTさんがURLを推測すれば閲覧できてしまいます。
 ```
 
-### Step 13: 完了報告
+### Step 14: 完了報告
 以下を伝える：
 
 ```
 ✅ セットアップ完了！
 
 【基本情報】
-- restart のデフォルトブランチ: （Step 6で取得した名前。例: main）
+- restart のデフォルトブランチ: （Step 6で .git/restart-branch に保存済。例: main）
 - 自分のブランチ: （入力されたブランチ名。例: kenzo）
+- pre-push hook: 設置済（restart/main 誤push 防止）
 
 【毎日の流れ】
 - 作業開始時（家）: /sync-home-start
@@ -220,10 +255,10 @@ RESTARTさんが偶然見つけたら一発でバレる。
 
 【別PCで作業する場合の注意】
 別のPCで初めて作業する場合も /setup-project を実行してください。
-.git/info/exclude はPCごとに設定が必要です。設定しないと CLAUDE.md 等が
-RESTARTさんに送られてしまいます。
+.git/info/exclude / .git/hooks/pre-push / .git/restart-branch は
+すべてPCごとに設定が必要です（.git/配下なので同期されないため）。
 
-【restart のデフォルトブランチが master だった場合】
-各スキルは main を前提に書かれています。master の場合は実行時に
-「restart のメインブランチは master です」と伝えてください。
+【restart のデフォルトブランチが master の場合】
+.git/restart-branch に自動保存されているので、各スキルが自動判定します。
+手動対応は不要です。
 ```
