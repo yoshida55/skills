@@ -99,7 +99,7 @@ gap_days=$((gap_seconds / 86400))
 git rev-list origin/main..HEAD --count
 ```
 
-**結果が 0 の場合**：ローカルは origin の追随中 → Step 3 へ。
+**結果が 0 の場合**：ローカルは origin の追随中 → Step 5 へ。
 
 **結果が 1 以上の場合**：⚠ 想定外の状態
 家でコミットしたまま /sync-home-end を忘れている可能性がある。
