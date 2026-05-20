@@ -308,19 +308,73 @@ git config user.name "（名前）"
 git config user.email "（メール）"
 ```
 
-### Step 12: origin の公開設定 注意喚起
+### Step 12: origin の公開設定を自動チェック（gh CLI使用）
 origin（自分のGitHub）が **public** だと、家での作業履歴が誰でも見える状態になる。
-RESTARTさんが偶然見つけたら一発でバレる。
+gh CLI で実機チェックし、必要なら自動でPrivateに切り替える。
 
-以下を伝える：
+まず gh が使えるか確認：
 ```
-⚠ 重要：origin の GitHub リポジトリは必ず private にしてください。
-  URL: （originのURL）
-  確認方法: ブラウザで上記URLを開き、Settings > General > Danger Zone で
-           "Change repository visibility" が Private になっているか確認。
-  
-  Public のままだと、squashで隠した家の作業履歴が origin 側に残るため、
-  RESTARTさんがURLを推測すれば閲覧できてしまいます。
+gh --version
+```
+
+**ケースA：gh が見つからない**
+
+gh CLI 未インストール → 手動確認の指示を出す：
+```
+⚠ gh CLI が見つかりません。手動で確認してください：
+1. ブラウザで origin URL を開く: （originのURL）
+2. Settings → General → Danger Zone
+3. "Change repository visibility" が Private になっているか確認
+4. Public のままだったら Private に変更
+
+⚠ Public のままだと、squashで隠した家の作業履歴が origin 側に残るため、
+RESTARTさんがURLを推測すれば閲覧できてしまいます。
+
+（gh CLI を入れたい場合: winget install GitHub.cli → gh auth login）
+```
+
+**ケースB：gh が使える**
+
+認証状態とリポジトリの公開設定を確認：
+```
+gh auth status
+gh repo view （originのURL） --json visibility -q .visibility
+```
+
+⚠ `gh auth status` がエラーの場合：「gh CLI が認証されていません。`gh auth login` を実行してください」と伝えて、認証完了後に再度チェック。
+
+`gh repo view` の出力で分岐：
+
+**結果が `PUBLIC` の場合** → ⚠ 危険：
+```
+🚨 origin は PUBLIC（公開）状態です！
+家の作業履歴がインターネット上で誰でも閲覧可能な状態です。
+
+すぐに Private に変更しますか？(y/N)
+```
+
+- **y** → 自動でPrivate化：
+  ```
+  gh repo edit （originのURL） --visibility private --accept-visibility-change-consequences
+  ```
+  完了したら再度 `gh repo view --json visibility` で確認し、PRIVATE になっていることを表示する。
+
+- **N** → 警告を強く出す：
+  ```
+  ⚠⚠⚠ 重要：作業前に必ず手動でPrivateにしてください。
+  Public のまま運用すると、家の作業がバレるリスクが非常に高いです。
+  ```
+
+**結果が `PRIVATE` の場合** → ✅ OK：
+```
+✅ origin は PRIVATE です。安心して作業できます。
+```
+
+**結果が `INTERNAL` の場合**（Enterprise アカウント）：
+```
+⚠ origin は INTERNAL（組織内公開）です。
+組織のメンバー全員に見えるため、RESTARTさんが同じ組織にいる場合は危険です。
+PRIVATE に変更することを推奨します。
 ```
 
 ### Step 13: 完了報告
