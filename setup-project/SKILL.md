@@ -122,6 +122,19 @@ echo ".manual_commit_only" >> .git/info/exclude
 
 ※ .gitignoreには書かない（restartに届いて隠していることがバレるため）
 
+最後に **`.manual_commit_only` マーカーファイルを設置** する：
+```
+touch .manual_commit_only
+```
+
+⚠ このマーカーは `D:\Programs\commit_all.ps1` が「このフォルダは自動コミット対象外」と判断するための目印。
+万一スクリプトの $directFolders / $parentFolders にこのフォルダが追加されても、
+マーカーがある限り **自動コミットからスキップされる**（二重保険）。
+
+⚠ 既に `.manual_commit_only` が存在する場合は touch しても無害（既存ファイルのタイムスタンプ更新のみ）。
+
+⚠ このファイル自体は exclude に登録済なので、restart には絶対に送られない。
+
 ### Step 5: 既にtrackedされているCLAUDE.md / sankou/ をuntrackする
 セットアップ前に誤ってコミットされている可能性があるため確認：
 ```
