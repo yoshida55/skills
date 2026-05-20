@@ -27,40 +27,63 @@ git ls-remote --heads origin main
 git fetch origin
 ```
 
-### Step 3: 今日 /work-end が実行されたかチェック（やり忘れ検知）
+### Step 3: 直近の /work-end 日付を表示してユーザー確認（やり忘れ検知）
 
-origin/main の最新コミット日付を確認して、今日 /work-end が実行されたか推定する：
+origin/main の日付だけだと「家の /sync-home-end も同じ origin に push する」せいで
+work-end やり忘れと区別できない。
+そこで `restart/takahashi` を見る。**ここは /work-end だけが push する場所** なので、
+最新コミット日時 = 最後に /work-end した時刻 が正確にわかる。
+
+restart の最新情報を取得：
 ```
-last_commit_date=$(git log -1 --format=%cd --date=short origin/main 2>/dev/null)
+git fetch restart 2>/dev/null
+```
+
+restart/takahashi の最新コミット情報を取得：
+```
+last_workend=$(git log -1 --format='%cd' --date=iso restart/takahashi 2>/dev/null)
+last_workend_date=$(git log -1 --format='%cd' --date=short restart/takahashi 2>/dev/null)
 today=$(date +%Y-%m-%d)
-echo "origin/main 最新: $last_commit_date / 今日: $today"
 ```
 
-**今日と一致する場合**：
-→ 今日 /work-end 済み（または家で /sync-home-end 済み）。Step 4 へ進む。
+**restart/takahashi が空 or 取得失敗の場合**：
+→ 「初回 setup-project 直後の可能性。スキップして Step 4 へ進みます。」
 
-**一致しない場合**：⚠ /work-end のやり忘れの可能性
-以下を伝える：
+**取得できた場合**：ユーザーに表示して判断を仰ぐ：
 ```
-⚠ origin/main の最新コミットは（$last_commit_date）です。
-今日（$today）の /work-end がまだ実行されていない可能性があります。
+🕐 直近の /work-end の記録：
+   $last_workend
 
-このまま家で作業すると、以下のリスクがあります：
-  - 家作業の起点が「会社の今日の作業」を含まない古い状態になる
-  - 翌朝 /work-start で会社local とマージ時に競合が増える
-  - 会社local の今日分が古く見えて、家修正と整合性がズレる
+今日: $today
 
-選択肢：
-  (a) このまま続行          → 今までの origin の状態を元に家作業
-  (b) 中止して会社に確認     → 翌日会社で /work-end してから家作業
+⚠ この日付より後に「会社で作業した日」がありますか？
+
+例:
+  - 今日が日曜、最後の /work-end が水曜
+    → 木曜/金曜に会社作業した？ してた場合 work-end やり忘れの可能性
   
+  - 今日が日曜、最後の /work-end が金曜
+    → 土日は会社作業してないなら問題なし → 続行OK
+
+  - 今日が月曜朝、最後の /work-end が金曜  
+    → 通常運用（土日は会社なし）→ 続行OK
+
+判断：
+  (続行) 上記日付以降に会社作業してない、または問題ない
+        → y
+  (中止) 上記日付以降に会社作業した、やり忘れの疑いあり
+        → N（明日会社で /work-end してから家作業推奨）
+
 続行しますか？(y=続行 / N=中止)
 ```
-- N → 停止。「明日会社で /work-end を実行してから家作業してください」と伝える
+
+- N → 停止。「次回会社出社時に /work-end を実行してから家作業を再開してください」と伝える
 - y → Step 4 へ進む
 
-⚠ 例外：今日が休日／在宅勤務で会社に行ってない場合は、当然 /work-end は無いので
-このチェックは false positive となる。その場合は y で続行してOK。
+⚠ この方式の利点：
+- 「いつ会社作業したか」はユーザーしか判断できないので、人間判断に任せる
+- 日付計算による false positive がない（休日・在宅勤務も自然に処理される）
+- 「最後の work-end 日付」が明示されるので忘却に気づきやすい
 
 ### Step 4: ローカルの状態をチェック（force-push検知）
 
