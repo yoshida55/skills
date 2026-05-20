@@ -124,12 +124,16 @@ git merge-base HEAD "restart/$RESTART_BRANCH"
 取得した基準ハッシュを使ってsquashする：
 ```
 git reset --soft （取得したハッシュ）
-git commit --date="$(date -Iseconds)" --reset-author -m "（ユーザーが入力したメッセージ）"
+git commit --date="$(date -Iseconds)" -m "（ユーザーが入力したメッセージ）"
 ```
 
-⚠ **`--date=` と `--reset-author` を両方付ける**（重要）：
-- `--date="$(date -Iseconds)"` → Author Date を現在時刻に強制設定
-- `--reset-author` → Author の name/email を現在の git config に強制リセット
+⚠ **`--date="$(date -Iseconds)"` を必ず付ける**：
+- Author Date を現在時刻に強制設定（家のタイムスタンプを消す）
+
+⚠ **`--reset-author` フラグは付けない**：
+- `git reset --soft` の後は新規コミット扱いなので、git config の name/email が自動的に使われる
+- `--reset-author` は `--amend` / `-C` / `-c` と組み合わせる時だけ有効なフラグ
+- 単独で付けると `fatal: --reset-author can be used only with -C, -c or --amend.` エラーになる
 
 これにより、家のタイムスタンプ・Author情報が squash 後のコミットに残らない。
 
