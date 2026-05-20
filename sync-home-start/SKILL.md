@@ -27,7 +27,7 @@ git ls-remote --heads origin main
 git fetch origin
 ```
 
-### Step 3: 直近の /work-end 日付を表示してユーザー確認（やり忘れ検知）
+### Step 3: 直近の /work-end からの経過日数チェック（やり忘れ検知）
 
 origin/main の日付だけだと「家の /sync-home-end も同じ origin に push する」せいで
 work-end やり忘れと区別できない。
@@ -39,51 +39,54 @@ restart の最新情報を取得：
 git fetch restart 2>/dev/null
 ```
 
-restart/takahashi の最新コミット情報を取得：
+経過時間を計算：
 ```
-last_workend=$(git log -1 --format='%cd' --date=iso restart/takahashi 2>/dev/null)
-last_workend_date=$(git log -1 --format='%cd' --date=short restart/takahashi 2>/dev/null)
-today=$(date +%Y-%m-%d)
+last_workend_ts=$(git log -1 --format='%ct' restart/takahashi 2>/dev/null)
+last_workend_iso=$(git log -1 --format='%cd' --date=iso restart/takahashi 2>/dev/null)
+now_ts=$(date +%s)
+gap_seconds=$((now_ts - last_workend_ts))
+gap_days=$((gap_seconds / 86400))
 ```
 
-**restart/takahashi が空 or 取得失敗の場合**：
+**restart/takahashi が取得失敗の場合**：
 → 「初回 setup-project 直後の可能性。スキップして Step 4 へ進みます。」
 
-**取得できた場合**：ユーザーに表示して判断を仰ぐ：
+**gap_days が 1日以内の場合**（昨日の夜～今日の work-end）：
+→ 通常運用とみなして静かに続行。短いメッセージのみ表示：
 ```
-🕐 直近の /work-end の記録：
-   $last_workend
+✅ 直近の /work-end: 約 $gap_days 日前（$last_workend_iso）。続行します。
+```
+→ Step 4 へ進む。
 
-今日: $today
+**gap_days が 2日以上の場合**：⚠ やり忘れの可能性ありとして警告：
+```
+⚠ 直近の /work-end から $gap_days 日経過しています。
+   最後の /work-end: $last_workend_iso
 
-⚠ この日付より後に「会社で作業した日」がありますか？
+この間に「会社で作業した日」がありますか？
 
-例:
-  - 今日が日曜、最後の /work-end が水曜
-    → 木曜/金曜に会社作業した？ してた場合 work-end やり忘れの可能性
-  
-  - 今日が日曜、最後の /work-end が金曜
-    → 土日は会社作業してないなら問題なし → 続行OK
+判断の目安：
+  ✅ 続行してOK：
+     - 土日を挟んだだけで会社作業してない（金→土日→月の朝など）
+     - 在宅勤務／休暇で会社に行っていない
+     
+  ⚠ 中止すべき：
+     - この日付以降に会社で作業した日がある（やり忘れの可能性）
 
-  - 今日が月曜朝、最後の /work-end が金曜  
-    → 通常運用（土日は会社なし）→ 続行OK
+選択：
+  (y) 続行     上記日付以降に会社作業してない、または問題ない
+  (N) 中止     やり忘れ疑い → 次回会社で /work-end してから家作業
 
-判断：
-  (続行) 上記日付以降に会社作業してない、または問題ない
-        → y
-  (中止) 上記日付以降に会社作業した、やり忘れの疑いあり
-        → N（明日会社で /work-end してから家作業推奨）
-
-続行しますか？(y=続行 / N=中止)
+続行しますか？(y/N)
 ```
 
 - N → 停止。「次回会社出社時に /work-end を実行してから家作業を再開してください」と伝える
 - y → Step 4 へ進む
 
 ⚠ この方式の利点：
-- 「いつ会社作業したか」はユーザーしか判断できないので、人間判断に任せる
-- 日付計算による false positive がない（休日・在宅勤務も自然に処理される）
-- 「最後の work-end 日付」が明示されるので忘却に気づきやすい
+- 1日以内は毎日のルーティンと判断して静かに続行（鬱陶しくない）
+- 2日以上空いた時だけ警告 → 通常週末や休暇では穏当な確認に
+- 金曜やり忘れ→日曜sync の場合は最終 work-end が 3日以上前になるので確実に検知
 
 ### Step 4: ローカルの状態をチェック（force-push検知）
 
