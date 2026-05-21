@@ -31,8 +31,20 @@ git fetch origin
 
 origin/main の日付だけだと「家の /sync-home-end も同じ origin に push する」せいで
 work-end やり忘れと区別できない。
-そこで `restart/takahashi` を見る。**ここは /work-end だけが push する場所** なので、
+そこで `restart/（自分のブランチ）` を見る。**ここは /work-end だけが push する場所** なので、
 最新コミット日時 = 最後に /work-end した時刻 が正確にわかる。
+
+自分のブランチ名を取得（setup-projectで保存済）：
+```
+USER_BRANCH=$(cat .git/user-branch 2>/dev/null)
+```
+
+**`.git/user-branch` が存在しない場合**（旧プロジェクト等のフォールバック）：
+```
+USER_BRANCH=$(git branch --show-current)
+echo "$USER_BRANCH" > .git/user-branch
+```
+※ 念のため保存しておく。
 
 restart の最新情報を取得：
 ```
@@ -41,14 +53,14 @@ git fetch restart 2>/dev/null
 
 経過時間を計算：
 ```
-last_workend_ts=$(git log -1 --format='%ct' restart/takahashi 2>/dev/null)
-last_workend_iso=$(git log -1 --format='%cd' --date=iso restart/takahashi 2>/dev/null)
+last_workend_ts=$(git log -1 --format='%ct' "restart/$USER_BRANCH" 2>/dev/null)
+last_workend_iso=$(git log -1 --format='%cd' --date=iso "restart/$USER_BRANCH" 2>/dev/null)
 now_ts=$(date +%s)
 gap_seconds=$((now_ts - last_workend_ts))
 gap_days=$((gap_seconds / 86400))
 ```
 
-**restart/takahashi が取得失敗の場合**：
+**restart/$USER_BRANCH が取得失敗の場合**：
 → 「初回 setup-project 直後の可能性。スキップして Step 4 へ進みます。」
 
 **gap_days が 1日以内の場合**（昨日の夜～今日の work-end）：

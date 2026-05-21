@@ -209,6 +209,24 @@ cat .git/restart-branch
 ```
 → `main` または `master` が表示されればOK。
 
+### Step 7.5: 自分のブランチ名を保存（共通）
+
+`.git/user-branch` にユーザーの作業ブランチ名を保存する。
+これにより sync-home-start の「やり忘れ検知」が動的に動作するようになる。
+
+```
+echo "（入力されたブランチ名）" > .git/user-branch
+```
+
+確認：
+```
+cat .git/user-branch
+```
+→ 入力したブランチ名（例: itou, kenzo）が表示されればOK。
+
+⚠ `.git/` 配下なのでリモートには絶対送られない（restartに見えない）。
+⚠ 別PCでのsetup-project実行時にも同じファイルが作られる（PCごとに必要）。
+
 ### Step 8: pre-push hook を設置（restart/main 誤push防止）
 TortoiseGit 等の GUI 経由で誤って restart の main/master ブランチに push する事故を
 構造的にブロックするため、`.git/hooks/pre-push` を設置する。
